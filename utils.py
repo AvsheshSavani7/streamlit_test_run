@@ -2,6 +2,7 @@ import streamlit as st
 from openai import OpenAI
 import json
 import os
+import hashlib
 from datetime import datetime
 from typing import Dict
 
@@ -67,12 +68,20 @@ def display_analysis_result(analysis_data, company_name: str = ""):
 
 
 def save_config_to_session(config: Dict[str, str]):
-    """Save configuration to session state"""
+    """Save configuration to session state and user storage"""
     st.session_state.config_settings = config
     if 'OPENAI_API_KEY' in config:
         st.session_state.openai_api_key = config['OPENAI_API_KEY']
         st.session_state.openai_client = OpenAI(
             api_key=config['OPENAI_API_KEY'])
+
+    # Save to user settings (localStorage equivalent)
+    user_settings = {
+        'config_settings': config,
+        'openai_api_key': config.get('OPENAI_API_KEY', ''),
+        'last_saved': datetime.now().isoformat()
+    }
+    save_user_settings(user_settings)
 
 
 def load_env_from_file():
@@ -90,8 +99,52 @@ def load_env_from_file():
     return ""
 
 
+def get_user_id():
+    """Generate a unique user ID based on browser info"""
+    # Use Streamlit's session info to create a unique identifier
+    try:
+        # Get session info from Streamlit
+        session_info = st.get_option("server.headless")
+        # Create a hash from session info for user identification
+        user_string = f"user_{hash(str(session_info))}"
+        return hashlib.md5(user_string.encode()).hexdigest()[:16]
+    except:
+        # Fallback to a default user ID
+        return "default_user"
+
+
+def load_user_settings():
+    """Load user settings from browser storage (simulated with file)"""
+    user_id = get_user_id()
+    settings_file = f".user_settings_{user_id}.json"
+
+    if os.path.exists(settings_file):
+        try:
+            with open(settings_file, 'r') as f:
+                return json.load(f)
+        except:
+            return {}
+    return {}
+
+
+def save_user_settings(settings):
+    """Save user settings to browser storage (simulated with file)"""
+    user_id = get_user_id()
+    settings_file = f".user_settings_{user_id}.json"
+
+    try:
+        with open(settings_file, 'w') as f:
+            json.dump(settings, f)
+        return True
+    except:
+        return False
+
+
 def initialize_session_state():
     """Initialize all session state variables"""
+    if 'user_id' not in st.session_state:
+        st.session_state.user_id = get_user_id()
+
     if 'openai_api_key' not in st.session_state:
         st.session_state.openai_api_key = ""
     if 'generated_output' not in st.session_state:
@@ -101,7 +154,14 @@ def initialize_session_state():
     if 'output_file' not in st.session_state:
         st.session_state.output_file = None
     if 'config_settings' not in st.session_state:
-        st.session_state.config_settings = {}
+        # Load from user settings first
+        user_settings = load_user_settings()
+        st.session_state.config_settings = user_settings.get(
+            'config_settings', {})
+        if user_settings.get('openai_api_key'):
+            st.session_state.openai_api_key = user_settings['openai_api_key']
+            st.session_state.openai_client = OpenAI(
+                api_key=user_settings['openai_api_key'])
     if 'env_file_content' not in st.session_state:
         st.session_state.env_file_content = ""
     if 'openai_client' not in st.session_state:

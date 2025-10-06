@@ -1,10 +1,21 @@
 import streamlit as st
-from utils import parse_env_content, save_config_to_session
+import json
+from utils import parse_env_content, save_config_to_session, load_user_settings, save_user_settings, get_user_id
 
 
 def render_settings_tab():
     """Render the Settings tab"""
     st.markdown("## ⚙️ Configuration Settings")
+
+    # Show user info and localStorage status
+    user_id = get_user_id()
+    user_settings = load_user_settings()
+
+    st.info(
+        f"👤 **User ID:** `{user_id}` | 💾 **Settings stored in:** Browser localStorage (simulated)")
+
+    if user_settings.get('last_saved'):
+        st.success(f"✅ **Last saved:** {user_settings['last_saved']}")
 
     col1, col2 = st.columns([1, 1])
 
@@ -166,6 +177,8 @@ def render_settings_tab():
                     st.session_state.env_file_content = ""
                     st.session_state.openai_api_key = ""
                     st.session_state.openai_client = None
+                    # Clear localStorage as well
+                    save_user_settings({})
                     st.rerun()
 
             with col_clear2:
@@ -174,6 +187,13 @@ def render_settings_tab():
                         del st.session_state.config_settings['OPENAI_API_KEY']
                     st.session_state.openai_api_key = ""
                     st.session_state.openai_client = None
+                    # Also clear from localStorage
+                    user_settings = load_user_settings()
+                    if 'openai_api_key' in user_settings:
+                        del user_settings['openai_api_key']
+                    if 'config_settings' in user_settings and 'OPENAI_API_KEY' in user_settings['config_settings']:
+                        del user_settings['config_settings']['OPENAI_API_KEY']
+                    save_user_settings(user_settings)
                     st.rerun()
     else:
         st.info(
@@ -205,3 +225,44 @@ def render_settings_tab():
         3. Paste the entire content in the text area above
         4. Click "Load from .env Content" to apply the settings
         """)
+
+    # localStorage Management Section
+    st.markdown("---")
+    st.markdown("### 💾 Browser localStorage Management")
+
+    col_local1, col_local2 = st.columns(2)
+
+    with col_local1:
+        st.markdown("**Current localStorage Status:**")
+        if user_settings:
+            st.success("✅ Settings stored in browser")
+            st.json({
+                "user_id": user_id,
+                "has_api_key": bool(user_settings.get('openai_api_key')),
+                "config_count": len(user_settings.get('config_settings', {})),
+                "last_saved": user_settings.get('last_saved', 'Never')
+            })
+        else:
+            st.info("ℹ️ No settings in localStorage")
+
+    with col_local2:
+        st.markdown("**localStorage Actions:**")
+        if st.button("📥 Export Settings", key="export_settings"):
+            if user_settings:
+                settings_json = json.dumps(user_settings, indent=2)
+                st.download_button(
+                    label="💾 Download Settings",
+                    data=settings_json,
+                    file_name=f"user_settings_{user_id}.json",
+                    mime="application/json"
+                )
+            else:
+                st.warning("No settings to export")
+
+        if st.button("🗑️ Clear localStorage", key="clear_localStorage"):
+            save_user_settings({})
+            st.session_state.config_settings = {}
+            st.session_state.openai_api_key = ""
+            st.session_state.openai_client = None
+            st.success("localStorage cleared!")
+            st.rerun()
