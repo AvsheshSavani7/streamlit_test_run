@@ -1,0 +1,174 @@
+import streamlit as st
+from utils import parse_env_content, save_config_to_session
+
+
+def render_settings_tab():
+    """Render the Settings tab"""
+    st.markdown("## ⚙️ Configuration Settings")
+
+    col1, col2 = st.columns([1, 1])
+
+    with col1:
+        st.markdown("### 🔧 Environment Variables")
+        st.markdown("Configure individual environment variables:")
+
+        openai_key = st.text_input(
+            "OpenAI API Key",
+            type="password",
+            value=st.session_state.config_settings.get('OPENAI_API_KEY', ''),
+            help="Your OpenAI API key for generating company analysis"
+        )
+
+        model_name = st.text_input(
+            "OpenAI Model",
+            value=st.session_state.config_settings.get(
+                'OPENAI_MODEL', 'gpt-3.5-turbo'),
+            help="OpenAI model to use (default: gpt-3.5-turbo)"
+        )
+
+        max_tokens = st.number_input(
+            "Max Tokens",
+            min_value=100,
+            max_value=4000,
+            value=int(st.session_state.config_settings.get(
+                'MAX_TOKENS', 1000)),
+            help="Maximum tokens for API response"
+        )
+
+        temperature = st.slider(
+            "Temperature",
+            min_value=0.0,
+            max_value=2.0,
+            value=float(st.session_state.config_settings.get(
+                'TEMPERATURE', 0.7)),
+            step=0.1,
+            help="Controls randomness in AI responses"
+        )
+
+        if st.button("💾 Save Individual Settings", key="save_individual"):
+            config = {
+                'OPENAI_API_KEY': openai_key,
+                'OPENAI_MODEL': model_name,
+                'MAX_TOKENS': str(max_tokens),
+                'TEMPERATURE': str(temperature)
+            }
+            save_config_to_session(config)
+            st.success("✅ Individual settings saved!")
+
+    with col2:
+        st.markdown("### 📄 .env File Configuration")
+        st.markdown("Paste your entire .env file content here:")
+
+        env_content = st.text_area(
+            ".env File Content",
+            value=st.session_state.env_file_content,
+            height=300,
+            placeholder="OPENAI_API_KEY=your_key_here\nOPENAI_MODEL=gpt-3.5-turbo\nMAX_TOKENS=1000\nTEMPERATURE=0.7\n# Add more variables as needed",
+            help="Paste your complete .env file content. Each line should be in KEY=VALUE format."
+        )
+
+        if st.button("🔄 Load from .env Content", key="load_env_content"):
+            if env_content.strip():
+                try:
+                    env_vars = parse_env_content(env_content)
+                    if env_vars:
+                        save_config_to_session(env_vars)
+                        st.session_state.env_file_content = env_content
+                        st.success(
+                            f"✅ Loaded {len(env_vars)} environment variables!")
+
+                        st.markdown("**Loaded Variables:**")
+                        for key, value in env_vars.items():
+                            if 'KEY' in key.upper() or 'SECRET' in key.upper():
+                                display_value = "***" + \
+                                    value[-4:] if len(value) > 4 else "***"
+                            else:
+                                display_value = value
+                            st.text(f"{key}: {display_value}")
+                    else:
+                        st.warning(
+                            "⚠️ No valid environment variables found in the content")
+                except Exception as e:
+                    st.error(f"❌ Error parsing .env content: {str(e)}")
+            else:
+                st.warning("⚠️ Please enter .env file content")
+
+        if st.button("💾 Save .env to File", key="save_env_file"):
+            if env_content.strip():
+                try:
+                    with open('.env', 'w') as f:
+                        f.write(env_content)
+                    st.success("✅ .env file saved to disk!")
+                except Exception as e:
+                    st.error(f"❌ Error saving .env file: {str(e)}")
+            else:
+                st.warning("⚠️ No content to save")
+
+    # Current Configuration Status
+    st.markdown("---")
+    st.markdown("### 📊 Current Configuration Status")
+
+    if st.session_state.config_settings:
+        st.success("✅ Configuration is active")
+
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            st.markdown("**API Configuration:**")
+            api_key_status = "✅ Set" if st.session_state.config_settings.get(
+                'OPENAI_API_KEY') else "❌ Not Set"
+            model_status = st.session_state.config_settings.get(
+                'OPENAI_MODEL', 'gpt-3.5-turbo')
+            st.text(f"API Key: {api_key_status}")
+            st.text(f"Model: {model_status}")
+
+        with col2:
+            st.markdown("**Generation Settings:**")
+            max_tokens = st.session_state.config_settings.get(
+                'MAX_TOKENS', '1000')
+            temperature = st.session_state.config_settings.get(
+                'TEMPERATURE', '0.7')
+            st.text(f"Max Tokens: {max_tokens}")
+            st.text(f"Temperature: {temperature}")
+
+        with col3:
+            st.markdown("**Total Variables:**")
+            total_vars = len(st.session_state.config_settings)
+            st.text(f"Loaded: {total_vars}")
+
+            if st.button("🗑️ Clear Configuration", key="clear_config"):
+                st.session_state.config_settings = {}
+                st.session_state.env_file_content = ""
+                st.session_state.openai_api_key = ""
+                st.session_state.openai_client = None
+                st.rerun()
+    else:
+        st.info(
+            "ℹ️ No configuration loaded. Use the options above to configure your environment variables.")
+
+    # Example .env file
+    st.markdown("---")
+    with st.expander("📝 Example .env File Format"):
+        st.markdown("""
+        ```env
+        # OpenAI Configuration
+        OPENAI_API_KEY=sk-your-openai-api-key-here
+        OPENAI_MODEL=gpt-3.5-turbo
+        MAX_TOKENS=1000
+        TEMPERATURE=0.7
+        
+        # Optional: Other API configurations
+        # ANTHROPIC_API_KEY=your-anthropic-key
+        # GOOGLE_API_KEY=your-google-key
+        
+        # Application settings
+        # DEBUG=false
+        # LOG_LEVEL=info
+        ```
+        
+        **Instructions:**
+        1. Copy the above template
+        2. Replace the placeholder values with your actual API keys
+        3. Paste the entire content in the text area above
+        4. Click "Load from .env Content" to apply the settings
+        """)
