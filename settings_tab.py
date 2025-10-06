@@ -15,9 +15,16 @@ def render_settings_tab():
         openai_key = st.text_input(
             "OpenAI API Key",
             type="password",
-            value=st.session_state.config_settings.get('OPENAI_API_KEY', ''),
+            value="",  # Never show the actual key
+            placeholder="Enter your OpenAI API key",
             help="Your OpenAI API key for generating company analysis"
         )
+
+        # Show if API key is configured without revealing it
+        if st.session_state.config_settings.get('OPENAI_API_KEY'):
+            st.success("✅ API Key is configured")
+        else:
+            st.warning("⚠️ API Key not configured")
 
         model_name = st.text_input(
             "OpenAI Model",
@@ -47,13 +54,22 @@ def render_settings_tab():
 
         if st.button("💾 Save Individual Settings", key="save_individual"):
             config = {
-                'OPENAI_API_KEY': openai_key,
                 'OPENAI_MODEL': model_name,
                 'MAX_TOKENS': str(max_tokens),
                 'TEMPERATURE': str(temperature)
             }
+
+            # Only update API key if user provided a new one
+            if openai_key.strip():
+                config['OPENAI_API_KEY'] = openai_key
+                st.success("✅ Individual settings saved with new API key!")
+            else:
+                # Keep existing API key if no new one provided
+                if st.session_state.config_settings.get('OPENAI_API_KEY'):
+                    config['OPENAI_API_KEY'] = st.session_state.config_settings['OPENAI_API_KEY']
+                st.success("✅ Individual settings saved!")
+
             save_config_to_session(config)
-            st.success("✅ Individual settings saved!")
 
     with col2:
         st.markdown("### 📄 .env File Configuration")
@@ -79,7 +95,7 @@ def render_settings_tab():
 
                         st.markdown("**Loaded Variables:**")
                         for key, value in env_vars.items():
-                            if 'KEY' in key.upper() or 'SECRET' in key.upper():
+                            if 'KEY' in key.upper() or 'SECRET' in key.upper() or 'API' in key.upper():
                                 display_value = "***" + \
                                     value[-4:] if len(value) > 4 else "***"
                             else:
@@ -122,6 +138,12 @@ def render_settings_tab():
             st.text(f"API Key: {api_key_status}")
             st.text(f"Model: {model_status}")
 
+            # Show masked API key if available
+            if st.session_state.config_settings.get('OPENAI_API_KEY'):
+                masked_key = "sk-***" + \
+                    st.session_state.config_settings['OPENAI_API_KEY'][-4:]
+                st.text(f"Key Preview: {masked_key}")
+
         with col2:
             st.markdown("**Generation Settings:**")
             max_tokens = st.session_state.config_settings.get(
@@ -136,12 +158,23 @@ def render_settings_tab():
             total_vars = len(st.session_state.config_settings)
             st.text(f"Loaded: {total_vars}")
 
-            if st.button("🗑️ Clear Configuration", key="clear_config"):
-                st.session_state.config_settings = {}
-                st.session_state.env_file_content = ""
-                st.session_state.openai_api_key = ""
-                st.session_state.openai_client = None
-                st.rerun()
+            col_clear1, col_clear2 = st.columns(2)
+
+            with col_clear1:
+                if st.button("🗑️ Clear Configuration", key="clear_config"):
+                    st.session_state.config_settings = {}
+                    st.session_state.env_file_content = ""
+                    st.session_state.openai_api_key = ""
+                    st.session_state.openai_client = None
+                    st.rerun()
+
+            with col_clear2:
+                if st.button("🔑 Clear API Key Only", key="clear_api_key"):
+                    if 'OPENAI_API_KEY' in st.session_state.config_settings:
+                        del st.session_state.config_settings['OPENAI_API_KEY']
+                    st.session_state.openai_api_key = ""
+                    st.session_state.openai_client = None
+                    st.rerun()
     else:
         st.info(
             "ℹ️ No configuration loaded. Use the options above to configure your environment variables.")
