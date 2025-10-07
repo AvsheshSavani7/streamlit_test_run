@@ -5,45 +5,6 @@ import os
 from datetime import datetime
 from typing import Dict
 
-from streamlit_js_eval import streamlit_js_eval
-
-
-def save_login(username: str):
-    """Save username into browser localStorage"""
-    try:
-        streamlit_js_eval(
-            js_expressions=f"localStorage.setItem('APP_USERNAME', '{username}')",
-            key="set_username"
-        )
-        return True
-    except Exception as e:
-        print(f"Error saving login: {e}")
-        return False
-
-
-def load_login():
-    """Load username from browser localStorage"""
-    try:
-        username = streamlit_js_eval(
-            js_expressions="localStorage.getItem('APP_USERNAME')",
-            key="get_username"
-        )
-        return username if username else None
-    except Exception as e:
-        print(f"Error loading login: {e}")
-        return None
-
-
-def clear_login():
-    """Clear saved username from browser localStorage"""
-    try:
-        streamlit_js_eval(
-            js_expressions="localStorage.removeItem('APP_USERNAME')",
-            key="clear_username"
-        )
-    except Exception as e:
-        print(f"Error clearing login: {e}")
-
 
 def parse_env_content(env_content: str) -> Dict[str, str]:
     """Parse .env file content and return key-value pairs"""

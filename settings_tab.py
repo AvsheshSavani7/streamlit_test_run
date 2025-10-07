@@ -7,14 +7,6 @@ def render_settings_tab():
     """Render the Settings tab"""
     st.markdown("## ⚙️ Configuration Settings")
 
-    # Logout button
-    col1, col2, col3 = st.columns([2, 1, 1])
-    with col3:
-        if st.button("🚪 Logout", key="logout_btn"):
-            st.session_state.user_authenticated = False
-            st.session_state.username = ""
-            st.rerun()
-
     # Load configuration from .env file
     env_file_path = '.env'
 
