@@ -7,68 +7,79 @@ def render_settings_tab():
     """Render the Settings tab"""
     st.markdown("## ⚙️ Configuration Settings")
 
-    # Load configuration from .env file
-    env_file_path = '.env'
+    # Check if we have configuration loaded in session state
+    if hasattr(st.session_state, 'config_settings') and st.session_state.config_settings:
+        config = st.session_state.config_settings
+        is_cloud = getattr(st.session_state, 'is_cloud_deployment', False)
 
-    # Check if .env file exists
-    if os.path.exists(env_file_path):
+        # Show deployment type
+        if is_cloud:
+            st.info(
+                "🌐 **Streamlit Cloud Deployment** - Configuration loaded from secrets")
+        else:
+            st.info("💻 **Local Development** - Configuration loaded from .env file")
 
-        # Load and parse the .env file
-        try:
-            with open(env_file_path, 'r') as f:
-                env_content = f.read()
+        # Show API key status
+        if config.get('OPENAI_API_KEY'):
+            st.success("✅ OpenAI API Key is configured")
+        else:
+            st.warning("⚠️ OpenAI API Key not found")
 
-            env_vars = parse_env_content(env_content)
-
-            if env_vars:
-                # Save to session state
-                save_config_to_session(env_vars)
-
-                # Show API key status
-                if env_vars.get('OPENAI_API_KEY'):
-                    st.success("✅ API Key is configured")
-                else:
-                    st.warning("⚠️ API Key not found in .env file")
-
-                # Display loaded variables
-                st.markdown("### 📊 Loaded Configuration")
-                for key, value in env_vars.items():
-                    if any(s in key.upper() for s in ["KEY", "SECRET", "API"]):
-                        display_value = "***" + \
-                            value[-4:] if len(value) > 4 else "***"
-                    else:
-                        display_value = value
-                    st.text(f"{key}: {display_value}")
-
-                # Show configuration summary
-                st.markdown("---")
-                st.markdown("### 📋 Configuration Summary")
-                st.json({
-                    "API Key": "✅ Configured" if env_vars.get('OPENAI_API_KEY') else "❌ Not Set",
-                    "Model": env_vars.get('OPENAI_MODEL', 'gpt-3.5-turbo'),
-                    "Max Tokens": env_vars.get('MAX_TOKENS', '1000'),
-                    "Temperature": env_vars.get('TEMPERATURE', '0.7'),
-                    "Total Variables": len(env_vars)
-                })
-
+        # Display loaded variables
+        st.markdown("### 📊 Loaded Configuration")
+        for key, value in config.items():
+            if any(s in key.upper() for s in ["KEY", "SECRET", "API"]):
+                display_value = "***" + value[-4:] if len(value) > 4 else "***"
             else:
-                st.warning(
-                    "⚠️ No valid environment variables found in .env file")
+                display_value = value
+            st.text(f"{key}: {display_value}")
 
-        except Exception as e:
-            st.error(f"❌ Error reading .env file: {str(e)}")
+        # Show configuration summary
+        st.markdown("---")
+        st.markdown("### 📋 Configuration Summary")
+        st.json({
+            "Deployment": "Streamlit Cloud" if is_cloud else "Local Development",
+            "API Key": "✅ Configured" if config.get('OPENAI_API_KEY') else "❌ Not Set",
+            "Model": config.get('OPENAI_MODEL', 'gpt-3.5-turbo'),
+            "Max Tokens": config.get('MAX_TOKENS', '1000'),
+            "Temperature": config.get('TEMPERATURE', '0.7'),
+            "Total Variables": len(config)
+        })
 
     else:
-        st.warning("⚠️ .env file not found")
-        st.info(
-            "Please create a `.env` file in the project root with your configuration.")
+        # No configuration found
+        st.warning("⚠️ No configuration found")
 
-        # Show example .env content
-        st.markdown("### 📝 Create .env File")
-        st.markdown(
-            "Create a file named `.env` in your project root with the following content:")
+        # Check if we're likely on Streamlit Cloud
+        try:
+            if hasattr(st, 'secrets') and st.secrets:
+                st.markdown("### 🌐 Streamlit Cloud Deployment")
+                st.info(
+                    "**For Streamlit Cloud:** Add your credentials as secrets in the Streamlit Cloud dashboard.")
+                st.markdown("""
+                **Steps to configure secrets:**
+                1. Go to your app in Streamlit Cloud
+                2. Click on "Settings" → "Secrets"
+                3. Add the following secrets:
+                   ```
+                   OPENAI_API_KEY = "sk-your-openai-api-key-here"
+                   OPENAI_MODEL = "gpt-3.5-turbo"
+                   MAX_TOKENS = "1000"
+                   TEMPERATURE = "0.7"
+                   ```
+                4. Save and redeploy your app
+                """)
+            else:
+                st.markdown("### 💻 Local Development")
+                st.info(
+                    "**For local development:** Create a `.env` file in your project root.")
 
-        example_content = """# OpenAI Configuration
+                # Show example .env content
+                st.markdown("### 📝 Create .env File")
+                st.markdown(
+                    "Create a file named `.env` in your project root with the following content:")
+
+                example_content = """# OpenAI Configuration
 OPENAI_API_KEY=sk-your-openai-api-key-here
 OPENAI_MODEL=gpt-3.5-turbo
 MAX_TOKENS=1000
@@ -78,16 +89,21 @@ TEMPERATURE=0.7
 # ANTHROPIC_API_KEY=your-anthropic-key
 # GOOGLE_API_KEY=your-google-key"""
 
-        st.code(example_content, language="env")
+                st.code(example_content, language="env")
 
-        st.markdown("**Instructions:**")
-        st.markdown(
-            "1. Create a file named `.env` in the same directory as `app.py`")
-        st.markdown("2. Copy the above template into the `.env` file")
-        st.markdown(
-            "3. Replace `sk-your-openai-api-key-here` with your actual OpenAI API key")
-        st.markdown("4. Save the file and refresh this page")
-        st.markdown("5. ⚠️ Never share your API key with others!")
+                st.markdown("**Instructions:**")
+                st.markdown(
+                    "1. Create a file named `.env` in the same directory as `app.py`")
+                st.markdown("2. Copy the above template into the `.env` file")
+                st.markdown(
+                    "3. Replace `sk-your-openai-api-key-here` with your actual OpenAI API key")
+                st.markdown("4. Save the file and refresh this page")
+                st.markdown("5. ⚠️ Never share your API key with others!")
+        except:
+            # Fallback for any errors
+            st.markdown("### ⚙️ Configuration Required")
+            st.info(
+                "Please configure your OpenAI API key either through Streamlit Cloud secrets or a local .env file.")
 
         # Refresh button
         if st.button("🔄 Refresh Configuration", key="refresh_config"):

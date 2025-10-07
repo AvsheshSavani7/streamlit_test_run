@@ -75,6 +75,38 @@ def save_config_to_session(config: Dict[str, str]):
             api_key=config['OPENAI_API_KEY'])
 
 
+def load_config_from_secrets():
+    """Load configuration from Streamlit secrets (for cloud deployment)"""
+    try:
+        # Check if we're running on Streamlit Cloud with secrets
+        if hasattr(st, 'secrets') and st.secrets:
+            config = {}
+            # Map common secret keys
+            secret_mapping = {
+                'OPENAI_API_KEY': 'OPENAI_API_KEY',
+                'openai_api_key': 'OPENAI_API_KEY',
+                'OPENAI_MODEL': 'OPENAI_MODEL',
+                'openai_model': 'OPENAI_MODEL',
+                'MAX_TOKENS': 'MAX_TOKENS',
+                'max_tokens': 'MAX_TOKENS',
+                'TEMPERATURE': 'TEMPERATURE',
+                'temperature': 'TEMPERATURE'
+            }
+
+            # Try to get secrets
+            for secret_key, config_key in secret_mapping.items():
+                try:
+                    if secret_key in st.secrets:
+                        config[config_key] = st.secrets[secret_key]
+                except:
+                    pass
+
+            return config if config else None
+    except Exception as e:
+        print(f"Error loading secrets: {e}")
+    return None
+
+
 def load_env_from_file():
     """Load environment variables from .env file if it exists"""
     env_file_path = '.env'
@@ -99,19 +131,33 @@ def initialize_session_state():
     if 'output_file' not in st.session_state:
         st.session_state.output_file = None
     if 'config_settings' not in st.session_state:
-        # Try to load from .env file
-        env_content = load_env_from_file()
-        if env_content:
-            env_vars = parse_env_content(env_content)
-            st.session_state.config_settings = env_vars
-            if env_vars.get('OPENAI_API_KEY'):
-                st.session_state.openai_api_key = env_vars['OPENAI_API_KEY']
+        # First try to load from Streamlit secrets (for cloud deployment)
+        secrets_config = load_config_from_secrets()
+        if secrets_config:
+            st.session_state.config_settings = secrets_config
+            st.session_state.is_cloud_deployment = True
+            if secrets_config.get('OPENAI_API_KEY'):
+                st.session_state.openai_api_key = secrets_config['OPENAI_API_KEY']
                 st.session_state.openai_client = OpenAI(
-                    api_key=env_vars['OPENAI_API_KEY'])
+                    api_key=secrets_config['OPENAI_API_KEY'])
         else:
-            st.session_state.config_settings = {}
+            # Fallback to .env file (for local development)
+            env_content = load_env_from_file()
+            if env_content:
+                env_vars = parse_env_content(env_content)
+                st.session_state.config_settings = env_vars
+                st.session_state.is_cloud_deployment = False
+                if env_vars.get('OPENAI_API_KEY'):
+                    st.session_state.openai_api_key = env_vars['OPENAI_API_KEY']
+                    st.session_state.openai_client = OpenAI(
+                        api_key=env_vars['OPENAI_API_KEY'])
+            else:
+                st.session_state.config_settings = {}
+                st.session_state.is_cloud_deployment = False
     if 'openai_client' not in st.session_state:
         st.session_state.openai_client = None
+    if 'is_cloud_deployment' not in st.session_state:
+        st.session_state.is_cloud_deployment = False
     # Validation tab session state
     if 'validation_input_json' not in st.session_state:
         st.session_state.validation_input_json = None
