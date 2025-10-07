@@ -52,34 +52,49 @@ def render_settings_tab():
 
         # Check if we're likely on Streamlit Cloud
         try:
-            if hasattr(st, 'secrets') and st.secrets:
-                st.markdown("### 🌐 Streamlit Cloud Deployment")
-                st.info(
-                    "**For Streamlit Cloud:** Add your credentials as secrets in the Streamlit Cloud dashboard.")
-                st.markdown("""
-                **Steps to configure secrets:**
-                1. Go to your app in Streamlit Cloud
-                2. Click on "Settings" → "Secrets"
-                3. Add the following secrets:
-                   ```
-                   OPENAI_API_KEY = "sk-your-openai-api-key-here"
-                   OPENAI_MODEL = "gpt-3.5-turbo"
-                   MAX_TOKENS = "1000"
-                   TEMPERATURE = "0.7"
-                   ```
-                4. Save and redeploy your app
-                """)
+            # Try to access secrets to determine environment
+            if hasattr(st, 'secrets'):
+                try:
+                    # Try to access secrets - this will fail if no secrets.toml exists
+                    secrets_dict = dict(st.secrets)
+                    if secrets_dict:
+                        st.markdown("### 🌐 Streamlit Cloud Deployment")
+                        st.info(
+                            "**For Streamlit Cloud:** Add your credentials as secrets in the Streamlit Cloud dashboard.")
+                        st.markdown("""
+                        **Steps to configure secrets:**
+                        1. Go to your app in Streamlit Cloud
+                        2. Click on "Settings" → "Secrets"
+                        3. Add the following secrets:
+                           ```
+                           OPENAI_API_KEY = "sk-your-openai-api-key-here"
+                           OPENAI_MODEL = "gpt-3.5-turbo"
+                           MAX_TOKENS = "1000"
+                           TEMPERATURE = "0.7"
+                           ```
+                        4. Save and redeploy your app
+                        """)
+                    else:
+                        # Secrets exists but is empty - treat as local development
+                        raise Exception("No secrets found")
+                except:
+                    # No secrets.toml or empty secrets - treat as local development
+                    raise Exception("Local development mode")
             else:
-                st.markdown("### 💻 Local Development")
-                st.info(
-                    "**For local development:** Create a `.env` file in your project root.")
+                # No st.secrets - definitely local development
+                raise Exception("Local development mode")
+        except:
+            # Local development mode
+            st.markdown("### 💻 Local Development")
+            st.info(
+                "**For local development:** Create a `.env` file in your project root.")
 
-                # Show example .env content
-                st.markdown("### 📝 Create .env File")
-                st.markdown(
-                    "Create a file named `.env` in your project root with the following content:")
+            # Show example .env content
+            st.markdown("### 📝 Create .env File")
+            st.markdown(
+                "Create a file named `.env` in your project root with the following content:")
 
-                example_content = """# OpenAI Configuration
+            example_content = """# OpenAI Configuration
 OPENAI_API_KEY=sk-your-openai-api-key-here
 OPENAI_MODEL=gpt-3.5-turbo
 MAX_TOKENS=1000
@@ -89,21 +104,16 @@ TEMPERATURE=0.7
 # ANTHROPIC_API_KEY=your-anthropic-key
 # GOOGLE_API_KEY=your-google-key"""
 
-                st.code(example_content, language="env")
+            st.code(example_content, language="env")
 
-                st.markdown("**Instructions:**")
-                st.markdown(
-                    "1. Create a file named `.env` in the same directory as `app.py`")
-                st.markdown("2. Copy the above template into the `.env` file")
-                st.markdown(
-                    "3. Replace `sk-your-openai-api-key-here` with your actual OpenAI API key")
-                st.markdown("4. Save the file and refresh this page")
-                st.markdown("5. ⚠️ Never share your API key with others!")
-        except:
-            # Fallback for any errors
-            st.markdown("### ⚙️ Configuration Required")
-            st.info(
-                "Please configure your OpenAI API key either through Streamlit Cloud secrets or a local .env file.")
+            st.markdown("**Instructions:**")
+            st.markdown(
+                "1. Create a file named `.env` in the same directory as `app.py`")
+            st.markdown("2. Copy the above template into the `.env` file")
+            st.markdown(
+                "3. Replace `sk-your-openai-api-key-here` with your actual OpenAI API key")
+            st.markdown("4. Save the file and refresh this page")
+            st.markdown("5. ⚠️ Never share your API key with others!")
 
         # Refresh button
         if st.button("🔄 Refresh Configuration", key="refresh_config"):

@@ -264,6 +264,9 @@ Important:
                                 json_output = json.dumps(output_data, indent=2)
                                 st.session_state.output_file = json_output
 
+                                # Rerun to immediately show the "View Complete Results" section
+                                st.rerun()
+
                 else:
                     st.error("JSON file must contain an array of companies")
 

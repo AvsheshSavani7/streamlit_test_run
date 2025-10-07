@@ -77,31 +77,34 @@ def render_validation_tab():
         # 3. Actual Output File
         st.markdown("#### 3. Actual Output JSON")
         actual_source = st.radio(
-            "Actual source:",
-            ["Use Previous Results", "Upload Custom"],
+            "Actual Output Source:",
+            ["Use Current Batch Results", "Upload Custom JSON"],
             key="actual_source_radio"
         )
 
-        if actual_source == "Use Previous Results":
-            try:
-                with open('twitter/company_analysis_20251006_163239.json', 'r') as f:
-                    st.session_state.validation_actual_json = json.load(f)
+        if actual_source == "Use Current Batch Results":
+            # First check if we have current batch results from Company Analysis tab
+            if st.session_state.batch_results:
+                actual_data = {
+                    "generated_at": datetime.now().isoformat(),
+                    "total_companies": len(st.session_state.batch_results),
+                    "results": st.session_state.batch_results
+                }
+                st.session_state.validation_actual_json = actual_data
                 st.success(
-                    "✅ Loaded actual results from twitter/company_analysis_20251006_163239.json")
-            except FileNotFoundError:
-                st.warning(
-                    "⚠️ Actual results file not found, trying previous results...")
-                if st.session_state.batch_results:
-                    actual_data = {
-                        "generated_at": datetime.now().isoformat(),
-                        "total_companies": len(st.session_state.batch_results),
-                        "results": st.session_state.batch_results
-                    }
-                    st.session_state.validation_actual_json = actual_data
+                    f"✅ Loaded {len(st.session_state.batch_results)} actual results from current Company Analysis batch run")
+            else:
+                # Fallback to static file if no batch results available
+                try:
+                    with open('twitter/company_analysis_20251006_163239.json', 'r') as f:
+                        st.session_state.validation_actual_json = json.load(f)
                     st.success(
-                        f"✅ Loaded {len(st.session_state.batch_results)} actual results from previous analysis")
-                else:
-                    st.warning("⚠️ No previous results available")
+                        "✅ Loaded actual results from twitter/company_analysis_20251006_163239.json (fallback file)")
+                except FileNotFoundError:
+                    st.warning(
+                        "⚠️ No batch results from Company Analysis and no fallback file found")
+                    st.info(
+                        "💡 Please run a batch analysis in the Company Analysis tab first, or upload a custom JSON file")
                     st.session_state.validation_actual_json = None
         else:
             uploaded_actual = st.file_uploader("Upload Actual JSON", type=[
@@ -119,36 +122,38 @@ def render_validation_tab():
     with col2:
         st.markdown("### Validation Prompt")
 
-        default_validation_prompt = """You are a data validation expert. I need you to analyze and compare the following three JSON files:
+        default_validation_prompt = """You are a data validation expert. Validate the correctness of the system-generated output.  
 
-1. **INPUT DATA**: The original company list that was processed
-2. **EXPECTED OUTPUT**: The expected results format and structure  
-3. **ACTUAL OUTPUT**: The actual results generated
+**INPUT DATA (original companies):**  
+{input_json}  
 
-Please analyze these files and provide your assessment:
+**EXPECTED OUTPUT (reference example):**  
+{expected_json}  
 
-**INPUT DATA:**
-{input_json}
+**ACTUAL OUTPUT (to validate):**  
+{actual_json}  
 
-**EXPECTED OUTPUT:**
-{expected_json}
+Ignore:
+- Data completeness (not all inputs need to appear in actual)  
+- Format compliance (don't check structure/schema)  
+- Missing elements  
 
-**ACTUAL OUTPUT:**
-{actual_json}
+Focus only on validating the **data values** in `analysis`.  
 
-Please provide your analysis covering:
-1. **Data Completeness**: Are all input companies processed?
-2. **Format Compliance**: Does the actual output match the expected format?
-3. **Data Quality**: Are the results accurate and well-structured?
-4. **Missing Elements**: What's missing or incorrect?
-5. **Overall Assessment**: Is the result appropriate and usable?
+Check the following:  
+1. **Company Name Match**: Does `company` exactly equal `analysis.company_name`?  
+2. **Twitter Handle Validity**: Is `main_twitter_handle` in the correct format (must start with `@`)?  
+3. **Twitter Handle Accuracy**: Compare with the style/pattern in EXPECTED (e.g., `Apple Inc.` → `@Apple`, `Tesla Inc.` → `@Tesla`). Assess if the mapping is reasonable for the company in ACTUAL.  
+4. **Inconsistencies**: List mismatches between `company` and `analysis.company_name`, invalid handles, or unlikely mappings.  
+5. **Final Verdict**: Is the ACTUAL output data correct and usable?  
 
-Format your response as structured JSON:
+Return only structured JSON:  
+
 {{
-  "data_completeness": "score/assessment",
-  "format_compliance": "score/assessment", 
-  "data_quality": "score/assessment",
-  "missing_elements": ["list", "of", "issues"],
+  "company_name_match": "score/assessment",
+  "twitter_handle_validity": "score/assessment",
+  "twitter_handle_accuracy": "score/assessment",
+  "inconsistencies": ["list of issues"],
   "overall_assessment": "final verdict",
   "recommendations": ["suggestion1", "suggestion2"]
 }}"""

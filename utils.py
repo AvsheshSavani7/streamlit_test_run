@@ -79,31 +79,43 @@ def load_config_from_secrets():
     """Load configuration from Streamlit secrets (for cloud deployment)"""
     try:
         # Check if we're running on Streamlit Cloud with secrets
-        if hasattr(st, 'secrets') and st.secrets:
-            config = {}
-            # Map common secret keys
-            secret_mapping = {
-                'OPENAI_API_KEY': 'OPENAI_API_KEY',
-                'openai_api_key': 'OPENAI_API_KEY',
-                'OPENAI_MODEL': 'OPENAI_MODEL',
-                'openai_model': 'OPENAI_MODEL',
-                'MAX_TOKENS': 'MAX_TOKENS',
-                'max_tokens': 'MAX_TOKENS',
-                'TEMPERATURE': 'TEMPERATURE',
-                'temperature': 'TEMPERATURE'
-            }
+        if hasattr(st, 'secrets'):
+            # Try to access secrets - this will fail gracefully if no secrets.toml exists
+            try:
+                # Check if secrets is accessible and has content
+                secrets_dict = dict(st.secrets)
+                if not secrets_dict:
+                    return None
 
-            # Try to get secrets
-            for secret_key, config_key in secret_mapping.items():
-                try:
-                    if secret_key in st.secrets:
-                        config[config_key] = st.secrets[secret_key]
-                except:
-                    pass
+                config = {}
+                # Map common secret keys
+                secret_mapping = {
+                    'OPENAI_API_KEY': 'OPENAI_API_KEY',
+                    'openai_api_key': 'OPENAI_API_KEY',
+                    'OPENAI_MODEL': 'OPENAI_MODEL',
+                    'openai_model': 'OPENAI_MODEL',
+                    'MAX_TOKENS': 'MAX_TOKENS',
+                    'max_tokens': 'MAX_TOKENS',
+                    'TEMPERATURE': 'TEMPERATURE',
+                    'temperature': 'TEMPERATURE'
+                }
 
-            return config if config else None
+                # Try to get secrets
+                for secret_key, config_key in secret_mapping.items():
+                    try:
+                        if secret_key in secrets_dict:
+                            config[config_key] = secrets_dict[secret_key]
+                    except:
+                        pass
+
+                return config if config else None
+            except Exception as secrets_error:
+                # No secrets.toml file or other secrets access error
+                # This is normal for local development
+                return None
     except Exception as e:
-        print(f"Error loading secrets: {e}")
+        # General error accessing st.secrets
+        return None
     return None
 
 
