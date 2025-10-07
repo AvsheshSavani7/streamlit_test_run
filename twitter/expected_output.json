@@ -1,75 +1,72 @@
-{
-  "generated_at": "2025-10-06T16:32:39.100151",
-  "total_companies": 10,
-  "results": [
-    {
-      "company": "Apple Inc.",
-      "analysis": {
-        "company_name": "Apple Inc.",
-        "main_twitter_handle": "@Apple"
-      }
-    },
-    {
-      "company": "Microsoft Corporation",
-      "analysis": {
-        "company_name": "Microsoft Corporation",
-        "main_twitter_handle": "@Microsoft"
-      }
-    },
-    {
-      "company": "Google (Alphabet Inc.)",
-      "analysis": {
-        "company_name": "Google (Alphabet Inc.)",
-        "main_twitter_handle": "@Google"
-      }
-    },
-    {
-      "company": "Amazon.com Inc.",
-      "analysis": {
-        "company_name": "Amazon.com Inc.",
-        "main_twitter_handle": "@amazon"
-      }
-    },
-    {
-      "company": "Tesla Inc.",
-      "analysis": {
-        "company_name": "Tesla Inc.",
-        "main_twitter_handle": "@Tesla"
-      }
-    },
-    {
-      "company": "Meta Platforms Inc.",
-      "analysis": {
-        "company_name": "Meta Platforms Inc.",
-        "main_twitter_handle": "@Meta"
-      }
-    },
-    {
-      "company": "Netflix Inc.",
-      "analysis": {
-        "company_name": "Netflix Inc.",
-        "main_twitter_handle": "@netflix"
-      }
-    },
-    {
-      "company": "Spotify Technology S.A.",
-      "analysis": {
-        "raw_output": "```json\n{\n  \"company_name\": \"Spotify Technology S.A.\",\n  \"main_twitter_handle\": \"@Spotify\"\n}\n```"
-      }
-    },
-    {
-      "company": "Uber Technologies Inc.",
-      "analysis": {
-        "company_name": "Uber Technologies Inc.",
-        "main_twitter_handle": "@Uber"
-      }
-    },
-    {
-      "company": "Airbnb Inc.",
-      "analysis": {
-        "company_name": "Airbnb Inc.",
-        "main_twitter_handle": "@Airbnb"
-      }
+[
+  {
+    "company": "Apple Inc.",
+    "analysis": {
+      "company_name": "Apple Inc.",
+      "main_twitter_handle": "@Apple"
     }
-  ]
-}
+  },
+  {
+    "company": "Microsoft Corporation",
+    "analysis": {
+      "company_name": "Microsoft Corporation",
+      "main_twitter_handle": "@Microsoft"
+    }
+  },
+  {
+    "company": "Google (Alphabet Inc.)",
+    "analysis": {
+      "company_name": "Google (Alphabet Inc.)",
+      "main_twitter_handle": "@Google"
+    }
+  },
+  {
+    "company": "Amazon.com Inc.",
+    "analysis": {
+      "company_name": "Amazon.com Inc.",
+      "main_twitter_handle": "@amazon"
+    }
+  },
+  {
+    "company": "Tesla Inc.",
+    "analysis": {
+      "company_name": "Tesla Inc.",
+      "main_twitter_handle": "@Tesla"
+    }
+  },
+  {
+    "company": "Meta Platforms Inc.",
+    "analysis": {
+      "company_name": "Meta Platforms Inc.",
+      "main_twitter_handle": "@Meta"
+    }
+  },
+  {
+    "company": "Netflix Inc.",
+    "analysis": {
+      "company_name": "Netflix Inc.",
+      "main_twitter_handle": "@netflix"
+    }
+  },
+  {
+    "company": "Spotify Technology S.A.",
+    "analysis": {
+      "company_name": "Spotify Technology S.A.",
+      "main_twitter_handle": "@Spotify"
+    }
+  },
+  {
+    "company": "Uber Technologies Inc.",
+    "analysis": {
+      "company_name": "Uber Technologies Inc.",
+      "main_twitter_handle": "@Uber"
+    }
+  },
+  {
+    "company": "Airbnb Inc.",
+    "analysis": {
+      "company_name": "Airbnb Inc.",
+      "main_twitter_handle": "@Airbnb"
+    }
+  }
+]

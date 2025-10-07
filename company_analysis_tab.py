@@ -411,14 +411,29 @@ Important:
 
                                 st.session_state.batch_results = results
 
-                                output_data = {
-                                    "generated_at": datetime.now().isoformat(),
-                                    "total_companies": len(results),
-                                    "results": results
-                                }
+                                # Format output to match expected output structure
+                                # Expected format: [{"company": "...", "analysis": {...}}, ...]
+                                formatted_results = []
+                                for result in results:
+                                    if isinstance(result.get('analysis'), dict):
+                                        # Valid analysis result
+                                        formatted_results.append({
+                                            "company": result['company'],
+                                            "analysis": result['analysis']
+                                        })
+                                    else:
+                                        # Error case - still include but with error info
+                                        formatted_results.append({
+                                            "company": result['company'],
+                                            "analysis": {
+                                                "company_name": result['company'],
+                                                "main_twitter_handle": None,
+                                                "error": result['analysis']
+                                            }
+                                        })
 
                                 json_output = json.dumps(
-                                    output_data, indent=2)
+                                    formatted_results, indent=2)
                                 st.session_state.output_file = json_output
 
                     # Download button in the second column
