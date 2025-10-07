@@ -1,5 +1,5 @@
 import streamlit as st
-from utils import initialize_session_state, load_env_from_file
+from utils import initialize_session_state, load_env_from_file, load_login, save_login
 from company_analysis_tab import render_company_analysis_tab
 from validation_tab import render_validation_tab
 from settings_tab import render_settings_tab
@@ -19,11 +19,16 @@ ALLOWED_USERS = [
 
 
 def check_user_authentication():
-    """Check if user is authenticated"""
     if 'user_authenticated' not in st.session_state:
         st.session_state.user_authenticated = False
     if 'username' not in st.session_state:
         st.session_state.username = ""
+
+    if not st.session_state.user_authenticated:
+        username = load_login()   # calls JS, fetches localStorage
+        if username:
+            st.session_state.user_authenticated = True
+            st.session_state.username = username
 
     return st.session_state.user_authenticated
 
@@ -50,6 +55,7 @@ def show_login_popup():
                     if username.strip().lower() in [user.lower() for user in ALLOWED_USERS]:
                         st.session_state.user_authenticated = True
                         st.session_state.username = username.strip()
+                        save_login(username.strip())
                         st.success(f"✅ Welcome, {username}! Access granted.")
                         st.rerun()
                     else:
